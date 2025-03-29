@@ -5,22 +5,28 @@ class MLP(nn.Module):
     def __init__(self):
         super().__init__()
         self.layer1 = nn.Linear(1, 16)
-        self.layer2 = nn.Linear(16, 16)
-        self.layer3 = nn.Linear(16, 1)
+        self.layer2 = nn.Linear(16, 1)
     
-    def forward(self, input):
-        x = self.layer1(input)
-        x = torch.relu(x)
+    def forward(self, x):
+        x = self.layer1(x)
+        x = torch.relu(x) # Negative = 0, 
         x = self.layer2(x)
-        x = torch.relu(x)
-        output = self.layer3(x)
-        return output
+        return x
+        
+    def analyze(self, market_indicator: int) -> int:
+        if 1 <= market_indicator <= 9:
+            return int(str(market_indicator) * 4)
+        
+        x = torch.tensor([[market_indicator]], dtype=torch.float32)
+        output = self.forward(x)
+        
+        sigmoid_out = torch.sigmoid(output).item() 
+        scaled = (sigmoid_out ** 0.5) * (10000 - 1) + 1 
+    
+        return int(scaled)
+
     
 if __name__ == "__main__":
-    model = MLP()  
-
-    input_value = torch.tensor([[42.0]])  # shape: (1, 1)
-
-    output = model(input_value)
-
-    print(f"Input: {input_value.item()}, Output: {output.item()}")
+    mlp = MLP()
+    print(mlp.analyze(3))   
+    print(mlp.analyze(55))  
