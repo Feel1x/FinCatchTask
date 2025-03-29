@@ -5,7 +5,15 @@ from agent import AgentPolicyNetwork
 from market_sim import MarketEnvironment
 
 
+"""
+Train a trading agent using REINFORCE with entropy regularization.
+Uses an MLP for market analysis, an AgentPolicyNetwork to convert LLM output into a trading action,
+and a MarketEnvironment to simulate market interactions and compute rewards by digit matching.
+"""
+
+
 def train_agent(mlp, agent, env, episodes=5000, lr=1e-2):
+    # Adam is used as the optimizer; it adapts the learning rate for each parameter during training.
     optimizer = optim.Adam(agent.parameters(), lr=lr)
     for episode in range(episodes):
         env.reset()
@@ -30,7 +38,7 @@ def train_agent(mlp, agent, env, episodes=5000, lr=1e-2):
         R = total_reward
         loss = -sum(episode_log_probs) * R  # Standard REINFORCE loss
 
-        # Add entropy regularization (MINIMAL CHANGE: 2 lines added here)
+        # Add entropy regularization 
         entropy = -torch.exp(log_prob) * log_prob  # Entropy formula: -p * log(p)
         loss -= 0.01 * entropy.sum()  # Add entropy term to the loss
 
@@ -51,4 +59,4 @@ if __name__ == "__main__":
     agent = AgentPolicyNetwork()
     env = MarketEnvironment(mlp, agent)
     print("Training agent")
-    train_agent(mlp, agent, env, episodes=10000, lr=1e-3)
+    train_agent(mlp, agent, env, episodes=5000, lr=1e-3)

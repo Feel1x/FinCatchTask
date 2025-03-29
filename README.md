@@ -3,30 +3,30 @@
 Implementation of the hard version of the FinCatch programming assessment.
 
 ## Contents
-mlp_for_llm_sim.py - q1
-agent.py - q2 agent
-market_sim.py - q3 enviroment
-train.py - reinforced learning 
+- **mlp_for_llm_sim.py** – Q1: MLP for simulating market analysis.
+- **agent.py** – Q2: AgentPolicyNetwork for trading decisions.
+- **market_sim.py** – Q3: Environment simulating market interactions.
+- **train.py** – Reinforcement learning training loop.
+- **finance.py** – Integration with real market data using yfinance.
 
-# Discussion on the question
-When the policy network is not pre-trained, convergence during reinforcement learning can be very challenging. This is mainly due to the following reasons:
+## Overview
+This repository contains a prototype trading agent built using reinforcement learning. The system consists of three main components:
+• An MLP that simulates market analysis (LLM simulation).
+• An agent that converts the market analysis into a 3-digit trading action.
+• A market environment that simulates interactions and computes rewards based on digit matching.
+The training loop applies the REINFORCE algorithm with entropy regularization and uses the Adam optimizer for adaptive learning rates.
 
-Sparse Rewards. The reward is only given when the agent achieves a perfect three-digit match. With such sparse feedback, the network rarely receives a strong learning signal. Without pre-training, the agent is essentially learning from almost zero reward for many episodes, which makes it hard to adjust its policy effectively.
+### Discussion on the question
+My training results reveal that the agent struggles to achieve meaningful rewards over 5000 episodes. Throughout all episodes, the total reward remained at 0.00, indicating that the agent consistently failed to reach the target state (state = 3) within the allowed interactions. Additionally, the weight norm of the policy network showed only minimal changes, suggesting that the updates during training were insufficient to guide the agent toward high-reward actions. This stagnation is primarily due to the sparse reward structure, where rewards are only given for achieving three matching digits, combined with the large action space, which makes exploration inefficient and rare successes even harder to achieve.
 
-Large and Discrete Action Space. The action space comprises 1000 possible actions (from 1 to 1000). Learning to pick the correct action in such a high-dimensional discrete space from scratch is difficult, especially when the correct actions are only rewarded in rare circumstances.
+The challenges are compounded by the nature of the task itself. The reward mechanism relies on digit matching, a process that lacks differentiability, meaning there’s no smooth gradient to guide parameter updates. Without intermediate rewards or pre-training, the agent essentially learns from almost zero feedback for many episodes, making it nearly impossible to adjust its policy effectively. Furthermore, the action space consists of 1,000 possible actions, which significantly increases the difficulty of finding the correct action in such a high-dimensional discrete space.
 
-Non-Differentiable Reward Structure. The reward mechanism relies on digit matching—a process that is not differentiable. This means that even if the agent’s actions are close to optimal, there’s no smooth gradient to guide the updates in its parameters.
+To address these issues, several techniques can be applied to improve performance. For instance, imitation learning or pre-training the agent using synthetic data with known correct actions for given LLM outputs could provide a solid starting point before applying reinforcement learning. Reward shaping is another promising approach, where intermediate rewards are introduced for partial successes, such as achieving one or two matching digits, to create a smoother learning signal. Advanced reinforcement learning algorithms like Proximal Policy Optimization (PPO) or actor-critic methods could also be employed, as they are better suited for handling sparse rewards and improving exploration efficiency compared to a simple REINFORCE approach.
 
-To address these challenges, several techniques can be applied:
-
-Imitation Learning or Pre-training. Use a set of “ideal” examples (e.g., known correct actions for given LLM outputs) to pre-train the network. This can give the agent a good starting point before applying reinforcement learning.
-
-Reward Shaping. Modify the reward function to provide intermediate rewards. For example, instead of only rewarding a perfect three-digit match, you might provide small rewards for achieving one or two matching digits. This can help guide the network’s learning more effectively.
-
-Advanced RL Algorithms. Consider using actor-critic methods or other RL algorithms like Proximal Policy Optimization (PPO) that can handle sparse rewards better than a simple REINFORCE approach.
+By implementing these strategies, the agent’s performance can be significantly enhanced. Pre-training provides a foundation, reward shaping encourages incremental progress, and advanced RL algorithms ensure more effective exploration and learning. Together, these methods address the core challenges of the task and offer a path toward more efficient training and decision-making.
 
 
-# Thoughts on task
+### Thoughts on task
 Should the LLM output be normalized to a consistent four-digit format for all inputs—even those between 10 and 100—to ensure that the reward mechanism (which relies on matching three digits) can function properly, given that single-digit outputs make matching impossible?
 
 """
@@ -42,6 +42,6 @@ return reward = 100/4, where 4 represents the number of interactions with the en
 
 In Test Case 2, when the LLM outputs 1111 and the agent selects 199, only the first digit should match (expected count = 1), but the system reports 2. Notably, in other cases, the state matches the previous matches and would have ended the loop. This inconsistency raises the question: should the matching state be used as the input for the next step, or is there another mechanism intended to maintain consistency?
 
-When there are zero matches, should the next market input be set to zero? An input of zero may not trigger the intended special-case behavior (like outputting 1111–9999), which could lead to further inconsistencies in the LLM output.
+When there are zero matches, should the next market input be set to zero? An input of zero may not trigger the intended special-case behavior (like outputting 1111–9999), which could lead to further inconsistencies in the LLM output. In my implementation, when there are zero matches, the next market input defaults to 1 or random to avoid ambiguity.
 
 If the current state is zero and it matches the previous state, should the episode be terminated? Terminating on a zero state might be ambiguous since it never yields a reward, disrupting the intended feedback mechanism.
